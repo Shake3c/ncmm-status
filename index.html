@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ncmm 运行面板</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,"Microsoft YaHei",sans-serif; background:#0f1420; color:#e8eaf0; min-height:100vh; padding:20px; }
+  h1 { font-size:22px; text-align:center; margin:10px 0 4px; }
+  .sub { text-align:center; color:#8b93a7; font-size:12px; margin-bottom:18px; }
+  .card { background:#1a2130; border-radius:14px; padding:16px; margin:0 auto 14px; max-width:640px; box-shadow:0 2px 10px rgba(0,0,0,.3); }
+  .card h2 { font-size:15px; color:#aab3c5; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; }
+  .badge { padding:2px 10px; border-radius:20px; font-size:12px; font-weight:600; }
+  .ok { background:#123b2a; color:#4ade80; }
+  .fail { background:#4a1d24; color:#f87171; }
+  .run { border-left:3px solid #2d3a52; padding:10px 12px; margin:8px 0; background:#141a28; border-radius:8px; }
+  .run .date { color:#7dd3fc; font-size:13px; font-weight:600; margin-bottom:6px; }
+  .run pre { white-space:pre-wrap; word-break:break-all; font-size:12px; color:#c3cad9; line-height:1.7; font-family:Consolas,monospace; }
+  .err { color:#f87171; }
+  .refresh { text-align:center; color:#8b93a7; font-size:12px; margin-top:8px; }
+</style>
+</head>
+<body>
+<h1>🎵 ncmm 每日任务面板</h1>
+<div class="sub">GitHub Actions 自动运行 · 每天北京时间 10:00</div>
+<div class="card" id="latest"><h2>最近一次运行</h2><div class="sub">加载中...</div></div>
+<div class="card"><h2>历史记录（最近 10 次）</h2><div id="history" class="sub">加载中...</div></div>
+<div class="refresh" id="ts"></div>
+<script>
+fetch('status.json?t='+Date.now()).then(r=>r.json()).then(d=>{
+  const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const fmt = iso => { const d=new Date(iso); return d.toLocaleString('zh-CN',{timeZone:'Asia/Shanghai',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}); };
+  const card = (r,full) => `
+    <div class="run">
+      <div class="date">${fmt(r.date)} · ${r.conclusion==='success'?'<span class="badge ok">成功</span>':'<span class="badge fail">'+esc(r.conclusion||'运行中')+'</span>'}</div>
+      <pre class="${r.conclusion!=='success'?'err':''}">${esc((r.lines||[]).join('\n'))}</pre>
+    </div>`;
+  if (d.runs && d.runs.length) {
+    document.getElementById('latest').innerHTML = '<h2>最近一次运行</h2>' + card(d.runs[0]);
+    document.getElementById('history').innerHTML = d.runs.slice(1).map(r=>card(r)).join('') || '<div class="sub">暂无更多</div>';
+  }
+  document.getElementById('ts').textContent = '更新于 ' + fmt(d.updated) + ' · 刷新页面获取最新';
+}).catch(e=>{ document.getElementById('latest').innerHTML='<h2>最近一次运行</h2><div class="sub">加载失败: '+e+'</div>'; });
+</script>
+</body>
+</html>
